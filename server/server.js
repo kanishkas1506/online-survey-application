@@ -9,15 +9,22 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Home Route
+app.get("/", (req, res) => {
+  res.send("Online Survey Backend is Running Successfully!");
+});
+
 // Question Schema
-const Question = mongoose.model("Question",
+const Question = mongoose.model(
+  "Question",
   new mongoose.Schema({
     question: { type: String, required: true }
   })
 );
 
 // Response Schema
-const Response = mongoose.model("Response",
+const Response = mongoose.model(
+  "Response",
   new mongoose.Schema({
     name: { type: String, required: true },
     answers: [{
@@ -41,7 +48,7 @@ const sampleQuestions = [
   "Which technology interests you?"
 ];
 
-// Get Fixed Questions
+// Get Questions
 app.get("/api/survey/questions", async (req, res) => {
   try {
     const questions = await Question.find().sort({ _id: 1 });
@@ -71,9 +78,11 @@ app.post("/api/survey/submit", async (req, res) => {
     const savedAnswers = [];
 
     for (const item of answers) {
-      if (!mongoose.isValidObjectId(item.questionId) ||
-          typeof item.answer !== "string" ||
-          !item.answer.trim()) {
+      if (
+        !mongoose.isValidObjectId(item.questionId) ||
+        typeof item.answer !== "string" ||
+        !item.answer.trim()
+      ) {
         return res.status(400).json({
           message: "Invalid question or empty answer"
         });
@@ -138,27 +147,31 @@ app.get("/api/survey/responses", async (req, res) => {
   }
 });
 
-// Database Connection
+// Database Connection and Server Start
 async function startServer() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB Connected Successfully!");
 
-    // Replace old questions with fixed 5 questions
-    await Question.deleteMany({});
+    // Insert fixed questions only if collection is empty
+    const count = await Question.countDocuments();
 
-    await Question.insertMany(
-      sampleQuestions.map(q => ({ question: q }))
-    );
+    if (count === 0) {
+      await Question.insertMany(
+        sampleQuestions.map(q => ({ question: q }))
+      );
+      console.log("5 Fixed Questions Inserted!");
+    }
 
-    console.log("5 Fixed Questions Inserted!");
+    const PORT = process.env.PORT || 5000;
 
-    app.listen(process.env.PORT || 5000, () => {
-      console.log("Server running on port 5000");
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
     });
 
   } catch (err) {
     console.log("Database Error:", err.message);
+    process.exit(1);
   }
 }
 
