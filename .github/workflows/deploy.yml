@@ -23,11 +23,15 @@ jobs:
         with:
           node-version: 20
 
+      
       - name: Install and Build
         working-directory: client
+        env:
+          VITE_API_URL: https://online-survey-application-1-gtnf.onrender.com/api/survey
         run: |
           npm install
           npm run build
+
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
